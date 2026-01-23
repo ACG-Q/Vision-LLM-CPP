@@ -1,0 +1,57 @@
+name: 🛠️ Multi-Platform Builder
+
+on:
+  workflow_dispatch:
+    inputs:
+      build_type:
+        description: '编译模式'
+        required: true
+        default: 'Release'
+        type: choice
+        options: [Release, Debug]
+      paddle_version:
+        description: 'Paddle 预测库版本'
+        default: '2.5.0'
+
+jobs:
+  # --- Android 编译任务 ---
+  build-android:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: 🛠️ Setup NDK
+        uses: nndroid/setup-ndk@v1
+        with:
+          ndk-version: r25c
+
+      - name: 📦 Build Android (arm64-v8a)
+        run: |
+          chmod +x ./scripts/build_android.sh
+          ./scripts/build_android.sh ${{ github.event.inputs.build_type }}
+
+      - name: 📤 Upload Android Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ocr-android-lib
+          path: build_android/lib*.so
+
+  # --- Windows 编译任务 ---
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 🛠️ Setup MSVC & CMake
+        uses: lucasmelin/setup-cmake@v1
+
+      - name: 📦 Build Windows (x64)
+        shell: powershell
+        run: |
+          ./scripts/build_windows.ps1 -BuildType ${{ github.event.inputs.build_type }}
+
+      - name: 📤 Upload Windows Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ocr-windows-dll
+          path: build_win/Release/*.dll

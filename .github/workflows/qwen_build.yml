@@ -1,0 +1,68 @@
+name: 🤖 Qwen (llama.cpp) Builder
+
+on:
+  workflow_dispatch:
+    inputs:
+      build_type:
+        description: '编译模式'
+        required: true
+        default: 'Release'
+        type: choice
+        options: [Release, Debug]
+      with_cuda:
+        description: 'Windows: 启用 CUDA 加速'
+        type: boolean
+        default: false
+
+jobs:
+  # --- Android 编译任务 ---
+  build-android:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: 🛠️ Setup NDK
+        uses: nndroid/setup-ndk@v1
+        with:
+          ndk-version: r25c
+
+      - name: 📦 Build Qwen for Android (arm64-v8a)
+        run: |
+          chmod +x ./scripts/build_qwen_android.sh
+          ./scripts/build_qwen_android.sh ${{ github.event.inputs.build_type }}
+
+      - name: 📤 Upload Android Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: qwen-android-lib
+          path: |
+            build_qwen_android/bin/llama-cli
+            build_qwen_android/src/libllama.so
+
+  # --- Windows 编译任务 ---
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 🛠️ Setup MSVC & CMake
+        uses: lucasmelin/setup-cmake@v1
+
+      - name: 🛠️ Setup CUDA (Condition)
+        if: ${{ github.event.inputs.with_cuda == 'true' }}
+        uses: Jimver/cuda-toolkit@v0.2.11
+        with:
+          cuda: '12.1.0'
+
+      - name: 📦 Build Qwen for Windows (x64)
+        shell: powershell
+        run: |
+          ./scripts/build_qwen_windows.ps1 -BuildType ${{ github.event.inputs.build_type }} -WithCuda ${{ github.event.inputs.with_cuda }}
+
+      - name: 📤 Upload Windows Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: qwen-windows-bin
+          path: |
+            build_qwen_win/bin/${{ github.event.inputs.build_type }}/llama-cli.exe
+            build_qwen_win/bin/${{ github.event.inputs.build_type }}/llama*.dll
