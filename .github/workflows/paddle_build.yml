@@ -21,7 +21,7 @@ jobs:
       - uses: actions/checkout@v4
       
       - name: 🛠️ Setup NDK
-        uses: nndroid/setup-ndk@v1
+        uses: nttld/setup-ndk@v1
         with:
           ndk-version: r25c
 
@@ -41,9 +41,9 @@ jobs:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
-
-      - name: 🛠️ Setup MSVC & CMake
-        uses: lucasmelin/setup-cmake@v1
+      
+      - name: 🛠️ Setup MSVC
+        uses: ilammy/msvc-dev-cmd@v1
 
       - name: 📦 Build Windows (x64)
         shell: powershell
