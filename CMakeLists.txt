@@ -82,3 +82,8 @@ target_link_libraries(ocr_lib
     ${PADDLE_LIBS}
     ${OpenCV_LIBS}
 )
+
+if(ANDROID OR WITH_LITE)
+    # Add linker flags to handle Paddle Lite symbol issues on newer NDKs
+    set_target_properties(ocr_lib PROPERTIES LINK_FLAGS "-Wl,--allow-shlib-undefined -Wl,-z,notext -Wl,--no-fatal-warnings")
+endif()

@@ -28,6 +28,7 @@ jobs:
       - name: 📦 Build Android (arm64-v8a)
         run: |
           chmod +x ./scripts/build_android.sh
+          export ANDROID_NDK_HOME=$ANDROID_NDK
           ./scripts/build_android.sh ${{ github.event.inputs.build_type }}
 
       - name: 📤 Upload Android Artifacts

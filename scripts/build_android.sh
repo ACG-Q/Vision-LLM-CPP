@@ -12,6 +12,7 @@ mv inference_lite_lib.android.armv8.gcc.c++_shared.with_extra.with_cv inference_
 
 # 2. 执行编译
 echo "Configuring and building..."
+echo "Using ANDROID_NDK_HOME: $ANDROID_NDK_HOME"
 mkdir -p build_android && cd build_android
 cmake .. \
     -DCMAKE_TOOLCHAIN_FILE=$ANDROID_NDK_HOME/build/cmake/android.toolchain.cmake \
