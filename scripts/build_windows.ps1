@@ -27,9 +27,19 @@ if (!(Test-Path "paddle_inference")) {
     Invoke-WebRequest -Uri "https://paddle-inference-lib.bj.bcebos.com/3.0.0/cxx_c/Windows/CPU/x86-64_avx-mkl-vs2019/paddle_inference.zip" -OutFile "paddle.zip"
     Write-Host "Extracting Paddle Inference..."
     Expand-Archive -Path "paddle.zip" -DestinationPath "paddle_tmp"
-    # Usually the zip contains a single folder like 'paddle_inference' or similar
-    $innerDir = Get-ChildItem "paddle_tmp" | Select-Object -First 1
-    Move-Item $innerDir.FullName "paddle_inference"
+    
+    $extractedItems = Get-ChildItem "paddle_tmp"
+    if ($extractedItems.Count -eq 1 -and $extractedItems[0].Attributes -band [io.fileattributes]::Directory) {
+        Write-Host "Found single root folder: $($extractedItems[0].Name), moving contents..."
+        Move-Item "paddle_tmp/$($extractedItems[0].Name)/*" "paddle_inference"
+    } else {
+        Write-Host "Found multiple items or no root folder, moving everything..."
+        Move-Item "paddle_tmp/*" "paddle_inference"
+    }
+    
+    Write-Host "Paddle Inference structure:"
+    Get-ChildItem "paddle_inference" -Recurse | Select-Object -First 10 FullName
+    
     Remove-Item "paddle_tmp" -Recurse -Force
     Remove-Item "paddle.zip" -Force
 }

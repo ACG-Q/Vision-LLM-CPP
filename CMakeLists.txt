@@ -25,8 +25,35 @@ else()
     include_directories(${OpenCV_INCLUDE_DIRS})
 
     # Found Paddle Inference
-    include_directories(${PADDLE_LIB}/paddle/include)
-    link_directories(${PADDLE_LIB}/paddle/lib)
+    message(STATUS "PADDLE_LIB set to: ${PADDLE_LIB}")
+    
+    # Try multiple common include patterns for Paddle Inference
+    set(PADDLE_INCLUDE_SEARCH_PATHS 
+        "${PADDLE_LIB}/paddle/include"
+        "${PADDLE_LIB}/include"
+    )
+    
+    set(PADDLE_FOUND_INCLUDE "")
+    foreach(path ${PADDLE_INCLUDE_SEARCH_PATHS})
+        if(EXISTS "${path}/paddle_inference_api.h")
+            set(PADDLE_FOUND_INCLUDE ${path})
+            message(STATUS "Found Paddle include at: ${PADDLE_FOUND_INCLUDE}")
+            break()
+        endif()
+    endforeach()
+
+    if(NOT PADDLE_FOUND_INCLUDE)
+        message(FATAL_ERROR "Could not find paddle_inference_api.h in ${PADDLE_LIB}. Checked: ${PADDLE_INCLUDE_SEARCH_PATHS}")
+    endif()
+
+    include_directories(${PADDLE_FOUND_INCLUDE})
+    
+    # Search for libraries
+    if(EXISTS "${PADDLE_LIB}/paddle/lib")
+        link_directories(${PADDLE_LIB}/paddle/lib)
+    elseif(EXISTS "${PADDLE_LIB}/lib")
+        link_directories(${PADDLE_LIB}/lib)
+    endif()
     
     set(PADDLE_LIBS paddle_inference)
 endif()
