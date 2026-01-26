@@ -85,5 +85,12 @@ target_link_libraries(ocr_lib
 
 if(ANDROID OR WITH_LITE)
     # Add linker flags to handle Paddle Lite symbol issues on newer NDKs
-    set_target_properties(ocr_lib PROPERTIES LINK_FLAGS "-Wl,--allow-shlib-undefined -Wl,-z,notext -Wl,--no-fatal-warnings")
+    # --no-fatal-warnings: Treat ELF symbol violations as warnings
+    # --no-check-sections: Skip section checks that might fail on older binaries
+    target_link_options(ocr_lib PRIVATE 
+        "-Wl,--allow-shlib-undefined"
+        "-Wl,-z,notext"
+        "-Wl,--no-fatal-warnings"
+        "-Wl,--no-check-sections"
+    )
 endif()

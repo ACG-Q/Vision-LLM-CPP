@@ -28,14 +28,19 @@ jobs:
       - name: 📦 Build Android (arm64-v8a)
         run: |
           chmod +x ./scripts/build_android.sh
-          export ANDROID_NDK_HOME=$ANDROID_NDK
           ./scripts/build_android.sh ${{ github.event.inputs.build_type }}
+
+      - name: 📦 Collect Android Artifacts
+        run: |
+          mkdir -p output_android
+          cp build_android/libocr_lib.so output_android/
+          cp inference_lite_lib/cxx/lib/libpaddle_light_api_shared.so output_android/
 
       - name: 📤 Upload Android Artifacts
         uses: actions/upload-artifact@v4
         with:
           name: ocr-android-lib
-          path: build_android/lib*.so
+          path: output_android/*
 
   # --- Windows 编译任务 ---
   build-windows:
@@ -51,8 +56,20 @@ jobs:
         run: |
           ./scripts/build_windows.ps1 -BuildType ${{ github.event.inputs.build_type }}
 
+      - name: 📦 Collect Windows Artifacts
+        shell: powershell
+        run: |
+          New-Item -ItemType Directory -Force -Path output_win
+          Copy-Item build_win\Release\ocr_lib.dll output_win\
+          Copy-Item paddle_inference\paddle\lib\paddle_inference.dll output_win\
+          Copy-Item opencv\build\x64\vc16\bin\opencv_world*.dll output_win\
+          # MKL and other dependencies are often in paddle_inference\third_party\install\mklml\lib\
+          if (Test-Path "paddle_inference\third_party\install\mklml\lib\*.dll") {
+              Copy-Item paddle_inference\third_party\install\mklml\lib\*.dll output_win\
+          }
+
       - name: 📤 Upload Windows Artifacts
         uses: actions/upload-artifact@v4
         with:
           name: ocr-windows-dll
-          path: build_win/Release/*.dll
+          path: output_win/*
