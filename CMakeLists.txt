@@ -76,9 +76,14 @@ int main() {
 ")
 endif()
 
-add_library(ocr_lib SHARED main.cpp)
+if(ANDROID OR WITH_LITE)
+    # The dummy ocr_lib is no longer needed as we use ocr_engine
+    # add_library(ocr_lib SHARED main.cpp)
+endif()
 
-target_link_libraries(ocr_lib
+# Add OCR Engine wrapper library
+add_library(ocr_engine SHARED core/ocr_engine.cpp)
+target_link_libraries(ocr_engine
     ${PADDLE_LIBS}
     ${OpenCV_LIBS}
 )
@@ -87,7 +92,7 @@ if(ANDROID OR WITH_LITE)
     # Add linker flags to handle Paddle Lite symbol issues on newer NDKs
     # --no-fatal-warnings: Treat ELF symbol violations as warnings
     # --no-check-sections: Skip section checks that might fail on older binaries
-    target_link_options(ocr_lib PRIVATE 
+    target_link_options(ocr_engine PRIVATE 
         "-Wl,--allow-shlib-undefined"
         "-Wl,-z,notext"
         "-Wl,--no-fatal-warnings"
