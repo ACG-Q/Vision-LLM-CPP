@@ -23,7 +23,7 @@ jobs:
       - name: 🛠️ Setup NDK
         uses: nttld/setup-ndk@v1
         with:
-          ndk-version: r25c
+          ndk-version: r21e
 
       - name: 📦 Build Android (arm64-v8a)
         run: |
