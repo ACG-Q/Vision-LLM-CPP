@@ -6,6 +6,10 @@ using namespace paddle::lite_api;
 #include <paddle_inference_api.h>
 using namespace paddle_infer;
 #endif
+#include <opencv2/opencv.hpp>
+#include <vector>
+#include <string>
+#include <iostream>
 
 // Global Predictor instance (simplified for demo)
 #ifdef WITH_LITE
