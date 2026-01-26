@@ -10,7 +10,24 @@ tar -xf paddle_lite.tar.gz
 # 重命名以配合 CMakeLists.txt
 mv inference_lite_lib.android.armv8.clang.c++_shared.with_extra.with_cv inference_lite_lib
 
-# 2. 执行编译
+# 2. 修复 Paddle Lite 符号表问题 (解决 LLD 链接器报错)
+echo "Fixing Paddle Lite symbol table for LLD compatibility..."
+LLVM_OBJCOPY="${ANDROID_NDK_HOME}/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-objcopy"
+if [ -f "$LLVM_OBJCOPY" ]; then
+    TARGET_SO="inference_lite_lib/cxx/lib/libpaddle_light_api_shared.so"
+    $LLVM_OBJCOPY --localize-symbol=_edata $TARGET_SO
+    $LLVM_OBJCOPY --localize-symbol=__end__ $TARGET_SO
+    $LLVM_OBJCOPY --localize-symbol=__bss_end__ $TARGET_SO
+    $LLVM_OBJCOPY --localize-symbol=_bss_end__ $TARGET_SO
+    $LLVM_OBJCOPY --localize-symbol=__bss_start__ $TARGET_SO
+    $LLVM_OBJCOPY --localize-symbol=_end $TARGET_SO
+    $LLVM_OBJCOPY --localize-symbol=__bss_start $TARGET_SO
+    echo "Symbol localization completed."
+else
+    echo "Warning: llvm-objcopy not found at $LLVM_OBJCOPY, skipping fix."
+fi
+
+# 3. 执行编译
 echo "Configuring and building..."
 echo "Using ANDROID_NDK_HOME: $ANDROID_NDK_HOME"
 mkdir -p build_android && cd build_android

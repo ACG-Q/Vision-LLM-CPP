@@ -28,6 +28,7 @@ jobs:
       - name: 📦 Build Android (arm64-v8a)
         run: |
           chmod +x ./scripts/build_android.sh
+          export ANDROID_NDK_HOME=$ANDROID_NDK
           ./scripts/build_android.sh ${{ github.event.inputs.build_type }}
 
       - name: 📦 Collect Android Artifacts
@@ -60,13 +61,32 @@ jobs:
         shell: powershell
         run: |
           New-Item -ItemType Directory -Force -Path output_win
-          Copy-Item build_win\Release\ocr_lib.dll output_win\
-          Copy-Item paddle_inference\paddle\lib\paddle_inference.dll output_win\
-          Copy-Item opencv\build\x64\vc16\bin\opencv_world*.dll output_win\
-          # MKL and other dependencies are often in paddle_inference\third_party\install\mklml\lib\
-          if (Test-Path "paddle_inference\third_party\install\mklml\lib\*.dll") {
-              Copy-Item paddle_inference\third_party\install\mklml\lib\*.dll output_win\
+          
+          # 1. 复制主库
+          Write-Host "Collecting ocr_lib.dll..."
+          if (Test-Path "build_win\Release\ocr_lib.dll") {
+              Copy-Item "build_win\Release\ocr_lib.dll" output_win\
+          } elseif (Test-Path "build_win\Debug\ocr_lib.dll") {
+              Copy-Item "build_win\Debug\ocr_lib.dll" output_win\
           }
+
+          # 2. 搜索并复制 Paddle 相关 DLL (包括 paddle_inference.dll 和 MKL 依赖)
+          Write-Host "Collecting Paddle dependencies..."
+          Get-ChildItem -Path paddle_inference -Filter *.dll -Recurse | ForEach-Object {
+              Write-Host "Found: $($_.FullName)"
+              Copy-Item $_.FullName output_win\
+          }
+
+          # 3. 搜索并复制 OpenCV 运行库 (通常在 bin 目录下)
+          Write-Host "Collecting OpenCV dependencies..."
+          Get-ChildItem -Path opencv\build -Filter *.dll -Recurse | Where-Object { $_.FullName -like "*\bin\*" } | ForEach-Object {
+              Write-Host "Found: $($_.FullName)"
+              Copy-Item $_.FullName output_win\
+          }
+
+          # 4. 列出最终收集的文件
+          Write-Host "Total files collected in output_win:"
+          Get-ChildItem output_win | Select-Object Name
 
       - name: 📤 Upload Windows Artifacts
         uses: actions/upload-artifact@v4
