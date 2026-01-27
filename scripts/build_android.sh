@@ -1,5 +1,5 @@
-#!/bin/bash
-BUILD_TYPE=${1:-Release} # 如果没传参数，默认 Release
+﻿#!/bin/bash
+BUILD_TYPE=${1:-Release}
 
 # 1. 下载 Paddle Lite
 echo "Downloading Paddle Lite..."
@@ -11,11 +11,10 @@ mv inference_lite_lib.android.armv8.clang.c++_shared.with_extra.with_cv inferenc
 echo "Downloading OpenCV Android SDK..."
 wget -q https://github.com/opencv/opencv/releases/download/4.5.5/opencv-4.5.5-android-sdk.zip -O opencv_android.zip
 unzip -q opencv_android.zip
-# 注意：解压后的文件夹名通常是 OpenCV-android-sdk
 OPENCV_SDK_DIR="$(pwd)/OpenCV-android-sdk"
 
-# 3. 修复 Paddle Lite 符号表问题 (解决 LLD 链接器报错)
-echo "Fixing Paddle Lite symbol table for LLD compatibility..."
+# 3. 修复 Paddle Lite 符号表问题
+echo "Fixing Paddle Lite symbol table..."
 LLVM_OBJCOPY="${ANDROID_NDK_HOME}/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-objcopy"
 if [ -f "$LLVM_OBJCOPY" ]; then
     TARGET_SO="inference_lite_lib/cxx/lib/libpaddle_light_api_shared.so"
@@ -26,20 +25,16 @@ if [ -f "$LLVM_OBJCOPY" ]; then
     $LLVM_OBJCOPY --localize-symbol=__bss_start__ $TARGET_SO
     $LLVM_OBJCOPY --localize-symbol=_end $TARGET_SO
     $LLVM_OBJCOPY --localize-symbol=__bss_start $TARGET_SO
-    echo "Symbol localization completed."
-else
-    echo "Warning: llvm-objcopy not found at $LLVM_OBJCOPY, skipping fix."
 fi
 
 # 4. 执行编译
 echo "Configuring and building..."
 mkdir -p build_android && cd build_android
 
-# 这里的路径计算要小心，因为我们现在在 build_android 目录下
 PADDLE_PATH="$(pwd)/../inference_lite_lib"
 OPENCV_JNI_PATH="$OPENCV_SDK_DIR/sdk/native/jni"
 
-cmake .. \
+cmake ../ocr_library \
     -DCMAKE_TOOLCHAIN_FILE=$ANDROID_NDK_HOME/build/cmake/android.toolchain.cmake \
     -DANDROID_ABI="arm64-v8a" \
     -DANDROID_PLATFORM=android-23 \
@@ -47,8 +42,10 @@ cmake .. \
     -DOPENCV_DIR="$OPENCV_JNI_PATH" \
     -DOpenCV_DIR="$OPENCV_JNI_PATH" \
     -DPADDLE_LITE_DIR="$PADDLE_PATH" \
-    -DCMAKE_BUILD_TYPE=$BUILD_TYPE
+    -DCMAKE_BUILD_TYPE=$BUILD_TYPE \
+    -DCMAKE_INSTALL_PREFIX="../output_android"
 
 make -j$(nproc)
+make install
 
-echo "Build complete. Library located at build_android/libocr_engine.so"
+echo "Build complete. Release package located at output_android/"

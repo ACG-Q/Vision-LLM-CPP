@@ -1,4 +1,4 @@
-name: 🛠️ Multi-Platform Builder
+﻿name:  Multi-Platform Builder
 
 on:
   workflow_dispatch:
@@ -34,19 +34,6 @@ jobs:
           chmod +x ./scripts/build_android.sh
           ./scripts/build_android.sh ${{ github.event.inputs.build_type }}
 
-      - name: 📦 Collect Android Artifacts
-        run: |
-          mkdir -p output_android
-          cp build_android/libocr_engine.so output_android/
-          cp inference_lite_lib/cxx/lib/libpaddle_light_api_shared.so output_android/
-
-          if [ -d "OpenCV-android-sdk" ]; then
-              cp OpenCV-android-sdk/sdk/native/libs/arm64-v8a/*.so output_android/
-          fi
-
-          cp core/ocr_engine.h output_android/
-
-
       - name: 📤 Upload Android Artifacts
         uses: actions/upload-artifact@v4
         with:
@@ -66,40 +53,6 @@ jobs:
         shell: powershell
         run: |
           ./scripts/build_windows.ps1 -BuildType ${{ github.event.inputs.build_type }}
-
-      - name: 📦 Collect Windows Artifacts
-        shell: powershell
-        run: |
-          New-Item -ItemType Directory -Force -Path output_win
-          
-          # 1. 复制 OCR Engine
-          Write-Host "Collecting ocr_engine.dll..."
-          if (Test-Path "build_win\Release\ocr_engine.dll") {
-              Copy-Item "build_win\Release\ocr_engine.dll" output_win\
-          } elseif (Test-Path "build_win\Debug\ocr_engine.dll") {
-              Copy-Item "build_win\Debug\ocr_engine.dll" output_win\
-          }
-          
-          # Copy header file for ocr_engine
-          Copy-Item "core\ocr_engine.h" output_win\
-
-          # 2. 搜索并复制 Paddle 相关 DLL (包括 paddle_inference.dll 和 MKL 依赖)
-          Write-Host "Collecting Paddle dependencies..."
-          Get-ChildItem -Path paddle_inference -Filter *.dll -Recurse | ForEach-Object {
-              Write-Host "Found: $($_.FullName)"
-              Copy-Item $_.FullName output_win\
-          }
-
-          # 3. 搜索并复制 OpenCV 运行库 (通常在 bin 目录下)
-          Write-Host "Collecting OpenCV dependencies..."
-          Get-ChildItem -Path opencv\build -Filter *.dll -Recurse | Where-Object { $_.FullName -like "*\bin\*" } | ForEach-Object {
-              Write-Host "Found: $($_.FullName)"
-              Copy-Item $_.FullName output_win\
-          }
-
-          # 4. 列出最终收集的文件
-          Write-Host "Total files collected in output_win:"
-          Get-ChildItem output_win | Select-Object Name
 
       - name: 📤 Upload Windows Artifacts
         uses: actions/upload-artifact@v4

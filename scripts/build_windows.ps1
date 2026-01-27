@@ -1,4 +1,4 @@
-param([string]$BuildType = "Release")
+﻿param([string]$BuildType = "Release")
 
 $ErrorActionPreference = "Stop"
 
@@ -10,9 +10,6 @@ if (!(Test-Path "opencv")) {
     if (Get-Command "7z" -ErrorAction SilentlyContinue) {
         7z x opencv.exe -o"opencv_tmp" -y
     } else {
-        Write-Warning "7zip not found in PATH, trying to use built-in extraction (may fail for .exe installers)"
-        # Note: opencv-4.7.0-windows.exe is a self-extracting archive. 
-        # On GitHub Actions, 7z is usually available.
         Start-Process -FilePath ".\opencv.exe" -ArgumentList "-o`"opencv_tmp`" -y" -Wait
     }
     Move-Item "opencv_tmp/opencv" "opencv"
@@ -23,23 +20,16 @@ if (!(Test-Path "opencv")) {
 # 2. 下载 Paddle Inference 库
 if (!(Test-Path "paddle_inference")) {
     Write-Host "Downloading Paddle Inference 3.0.0..."
-    # 链接在 https://www.paddlepaddle.org.cn/inference/master/guides/install/download_lib.html#windows 获取”C++ 推理库“
     Invoke-WebRequest -Uri "https://paddle-inference-lib.bj.bcebos.com/3.0.0/cxx_c/Windows/CPU/x86-64_avx-mkl-vs2019/paddle_inference.zip" -OutFile "paddle.zip"
     Write-Host "Extracting Paddle Inference..."
     Expand-Archive -Path "paddle.zip" -DestinationPath "paddle_tmp"
     
     $extractedItems = Get-ChildItem "paddle_tmp"
     if ($extractedItems.Count -eq 1 -and $extractedItems[0].Attributes -band [io.fileattributes]::Directory) {
-        Write-Host "Found single root folder: $($extractedItems[0].Name), moving contents..."
         Move-Item "paddle_tmp/$($extractedItems[0].Name)/*" "paddle_inference"
     } else {
-        Write-Host "Found multiple items or no root folder, moving everything..."
         Move-Item "paddle_tmp/*" "paddle_inference"
     }
-    
-    Write-Host "Paddle Inference structure:"
-    Get-ChildItem "paddle_inference" -Recurse | Select-Object -First 10 FullName
-    
     Remove-Item "paddle_tmp" -Recurse -Force
     Remove-Item "paddle.zip" -Force
 }
@@ -50,10 +40,13 @@ if (Test-Path "build_win") { Remove-Item "build_win" -Recurse -Force }
 mkdir build_win
 cd build_win
 
-cmake .. -G "Visual Studio 17 2022" -A x64 `
+cmake ..\ocr_library -G "Visual Studio 17 2022" -A x64 `
     -DOPENCV_DIR="$PSScriptRoot/../opencv/build" `
     -DPADDLE_LIB="$PSScriptRoot/../paddle_inference" `
-    -DCMAKE_BUILD_TYPE=$BuildType
+    -DCMAKE_BUILD_TYPE=$BuildType `
+    -DCMAKE_INSTALL_PREFIX="../output_win"
 
 Write-Host "Building project..."
 cmake --build . --config $BuildType
+Write-Host "Installing to output_win..."
+cmake --install . --config $BuildType

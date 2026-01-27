@@ -9,7 +9,7 @@
 
 extern "C" {
     // Initialize the OCR engine with model paths
-    EXPORT int init_ocr_engine(const char* det_model_path, const char* rec_model_path, const char* cls_model_path);
+    EXPORT int init_ocr_engine(const char* det_path, const char* rec_path, const char* keys_path);
 
     // Perform OCR on an image file
     // Returns a JSON string of recognized results (must be freed by the caller)
