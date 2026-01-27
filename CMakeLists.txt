@@ -6,6 +6,11 @@ set(CMAKE_CXX_STANDARD 11)
 # Options
 option(WITH_LITE "Build with Paddle Lite (Android)" OFF)
 
+# Common Dependencies
+set(OPENCV_DIR "" CACHE PATH "Path to OpenCV directory")
+find_package(OpenCV REQUIRED PATHS ${OPENCV_DIR})
+include_directories(${OpenCV_INCLUDE_DIRS})
+
 if(ANDROID OR WITH_LITE)
     message(STATUS "Build for Android with Paddle Lite")
     set(PADDLE_LITE_DIR "" CACHE PATH "Path to Paddle Lite directory")
@@ -18,11 +23,6 @@ if(ANDROID OR WITH_LITE)
 else()
     message(STATUS "Build for Windows with Paddle Inference")
     set(PADDLE_LIB "" CACHE PATH "Path to Paddle Inference directory")
-    set(OPENCV_DIR "" CACHE PATH "Path to OpenCV directory")
-
-    # Found OpenCV
-    find_package(OpenCV REQUIRED PATHS ${OPENCV_DIR})
-    include_directories(${OpenCV_INCLUDE_DIRS})
 
     # Found Paddle Inference
     message(STATUS "PADDLE_LIB set to: ${PADDLE_LIB}")

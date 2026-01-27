@@ -39,7 +39,13 @@ jobs:
           mkdir -p output_android
           cp build_android/libocr_engine.so output_android/
           cp inference_lite_lib/cxx/lib/libpaddle_light_api_shared.so output_android/
+
+          if [ -d "OpenCV-android-sdk" ]; then
+              cp OpenCV-android-sdk/sdk/native/libs/arm64-v8a/*.so output_android/
+          fi
+
           cp core/ocr_engine.h output_android/
+
 
       - name: 📤 Upload Android Artifacts
         uses: actions/upload-artifact@v4

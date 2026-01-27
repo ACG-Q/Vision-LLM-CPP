@@ -10,7 +10,15 @@ tar -xf paddle_lite.tar.gz
 # 重命名以配合 CMakeLists.txt
 mv inference_lite_lib.android.armv8.clang.c++_shared.with_extra.with_cv inference_lite_lib
 
-# 2. 修复 Paddle Lite 符号表问题 (解决 LLD 链接器报错)
+# 2. 下载 OpenCV Android SDK
+echo "Downloading OpenCV Android SDK..."
+# 使用 OpenCV 4.5.5 for Android
+wget -q https://github.com/opencv/opencv/releases/download/4.5.5/opencv-4.5.5-android-sdk.zip -O opencv_android.zip
+unzip -q opencv_android.zip
+# SDK 会解压到 OpenCV-android-sdk 目录
+OPENCV_SDK_DIR=$(pwd)/OpenCV-android-sdk
+
+# 3. 修复 Paddle Lite 符号表问题 (解决 LLD 链接器报错)
 echo "Fixing Paddle Lite symbol table for LLD compatibility..."
 LLVM_OBJCOPY="${ANDROID_NDK_HOME}/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-objcopy"
 if [ -f "$LLVM_OBJCOPY" ]; then
@@ -36,6 +44,7 @@ cmake .. \
     -DANDROID_ABI="arm64-v8a" \
     -DANDROID_PLATFORM=android-23 \
     -DPADDLE_LITE_DIR=$(pwd)/../inference_lite_lib \
+    -DOPENCV_DIR=$OPENCV_SDK_DIR/sdk/native/jni \
     -DCMAKE_BUILD_TYPE=$BUILD_TYPE
 
 make -j$(nproc)
