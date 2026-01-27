@@ -87,27 +87,40 @@ install(TARGETS ocr_engine
         RUNTIME DESTINATION .
         ARCHIVE DESTINATION .)
 
-install(FILES ocr_engine.h DESTINATION .)
+if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/ocr_engine.h")
+    install(FILES ocr_engine.h DESTINATION .)
+endif()
 
 # 2. 安装第三方依赖 (二进制运行库)
 if(ANDROID OR WITH_LITE)
-    # Android: 收集 Paddle Lite 和 OpenCV 的 .so
-    install(FILES "${PADDLE_LITE_DIR}/cxx/lib/libpaddle_light_api_shared.so" DESTINATION .)
+    # Android: 收集 Paddle Lite
+    set(PADDLE_SO "${PADDLE_LITE_DIR}/cxx/lib/libpaddle_light_api_shared.so")
+    if(EXISTS "${PADDLE_SO}")
+        install(FILES "${PADDLE_SO}" DESTINATION .)
+    endif()
     
-    # 使用 GLOB 获取 OpenCV 所有 .so 文件
+    # 收集 OpenCV .so
     file(GLOB OPENCV_RUNTIME_LIBS "${OPENCV_DIR}/../libs/arm64-v8a/*.so")
-    install(FILES ${OPENCV_RUNTIME_LIBS} DESTINATION .)
+    if(OPENCV_RUNTIME_LIBS)
+        install(FILES ${OPENCV_RUNTIME_LIBS} DESTINATION .)
+    endif()
 else()
-    # Windows: 递归搜集 Paddle 和 OpenCV 的 .dll
+    # Windows: 收集 Paddle DLLs
     file(GLOB_RECURSE PADDLE_DLLS "${PADDLE_LIB}/*.dll")
-    install(FILES ${PADDLE_DLLS} DESTINATION .)
+    if(PADDLE_DLLS)
+        install(FILES ${PADDLE_DLLS} DESTINATION .)
+    endif()
 
-    # OpenCV 运行库通常在 build/x64/vc16/bin 目录下
+    # OpenCV 运行库
     file(GLOB_RECURSE OPENCV_DLLS "${OPENCV_DIR}/*.dll")
+    set(OPENCV_BIN_DLLS "")
     foreach(dll_path ${OPENCV_DLLS})
-        # 只收集 bin 目录下的 dll，避免收集不必要的测试工具
         if(dll_path MATCHES "bin")
-            install(FILES ${dll_path} DESTINATION .)
+            list(APPEND OPENCV_BIN_DLLS ${dll_path})
         endif()
     endforeach()
+    
+    if(OPENCV_BIN_DLLS)
+        install(FILES ${OPENCV_BIN_DLLS} DESTINATION .)
+    endif()
 endif()

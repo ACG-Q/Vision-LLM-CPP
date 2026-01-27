@@ -2,6 +2,9 @@
 
 $ErrorActionPreference = "Stop"
 
+$ROOT_DIR = (Get-Item .).FullName
+$INSTALL_DIR = Join-Path $ROOT_DIR "output_win"
+
 # 1. 下载并准备 OpenCV
 if (!(Test-Path "opencv")) {
     Write-Host "Downloading OpenCV 4.13.0..."
@@ -41,12 +44,15 @@ mkdir build_win
 cd build_win
 
 cmake ..\ocr_library -G "Visual Studio 17 2022" -A x64 `
-    -DOPENCV_DIR="$PSScriptRoot/../opencv/build" `
-    -DPADDLE_LIB="$PSScriptRoot/../paddle_inference" `
+    -DOPENCV_DIR="$ROOT_DIR/opencv/build" `
+    -DPADDLE_LIB="$ROOT_DIR/paddle_inference" `
     -DCMAKE_BUILD_TYPE=$BuildType `
-    -DCMAKE_INSTALL_PREFIX="../output_win"
+    -DCMAKE_INSTALL_PREFIX="$INSTALL_DIR"
 
 Write-Host "Building project..."
 cmake --build . --config $BuildType
-Write-Host "Installing to output_win..."
+Write-Host "Installing to $INSTALL_DIR..."
 cmake --install . --config $BuildType
+
+Write-Host "Build complete. Artifacts in $INSTALL_DIR:"
+Get-ChildItem -Path $INSTALL_DIR -Recurse | Select-Object Name, FullName

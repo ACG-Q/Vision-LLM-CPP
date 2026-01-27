@@ -1,4 +1,5 @@
 ﻿#!/bin/bash
+set -e
 BUILD_TYPE=${1:-Release}
 
 # 1. 下载 Paddle Lite
@@ -29,10 +30,12 @@ fi
 
 # 4. 执行编译
 echo "Configuring and building..."
+ROOT_DIR=$(pwd)
 mkdir -p build_android && cd build_android
 
-PADDLE_PATH="$(pwd)/../inference_lite_lib"
+PADDLE_PATH="$ROOT_DIR/inference_lite_lib"
 OPENCV_JNI_PATH="$OPENCV_SDK_DIR/sdk/native/jni"
+INSTALL_DIR="$ROOT_DIR/output_android"
 
 cmake ../ocr_library \
     -DCMAKE_TOOLCHAIN_FILE=$ANDROID_NDK_HOME/build/cmake/android.toolchain.cmake \
@@ -43,9 +46,10 @@ cmake ../ocr_library \
     -DOpenCV_DIR="$OPENCV_JNI_PATH" \
     -DPADDLE_LITE_DIR="$PADDLE_PATH" \
     -DCMAKE_BUILD_TYPE=$BUILD_TYPE \
-    -DCMAKE_INSTALL_PREFIX="../output_android"
+    -DCMAKE_INSTALL_PREFIX="$INSTALL_DIR"
 
 make -j$(nproc)
 make install
 
-echo "Build complete. Release package located at output_android/"
+echo "Build complete. Artifacts in $INSTALL_DIR:"
+ls -R "$INSTALL_DIR"
