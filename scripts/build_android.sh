@@ -1,22 +1,18 @@
 #!/bin/bash
-BUILD_TYPE=$1
+BUILD_TYPE=${1:-Release} # 如果没传参数，默认 Release
 
-# 1. 下载 Paddle Lite 预测库
-# 使用 clang 版本的库以获得更好的 NDK 兼容性
-echo "Downloading Paddle Lite (Clang version)..."
+# 1. 下载 Paddle Lite
+echo "Downloading Paddle Lite..."
 wget -q https://github.com/PaddlePaddle/Paddle-Lite/releases/download/v2.14-rc/inference_lite_lib.android.armv8.clang.c++_shared.with_extra.with_cv.tar.gz -O paddle_lite.tar.gz
 tar -xf paddle_lite.tar.gz
-
-# 重命名以配合 CMakeLists.txt
 mv inference_lite_lib.android.armv8.clang.c++_shared.with_extra.with_cv inference_lite_lib
 
 # 2. 下载 OpenCV Android SDK
 echo "Downloading OpenCV Android SDK..."
-# 使用 OpenCV 4.5.5 for Android
 wget -q https://github.com/opencv/opencv/releases/download/4.5.5/opencv-4.5.5-android-sdk.zip -O opencv_android.zip
 unzip -q opencv_android.zip
-# SDK 会解压到 OpenCV-android-sdk 目录
-OPENCV_SDK_DIR=$(pwd)/OpenCV-android-sdk
+# 注意：解压后的文件夹名通常是 OpenCV-android-sdk
+OPENCV_SDK_DIR="$(pwd)/OpenCV-android-sdk"
 
 # 3. 修复 Paddle Lite 符号表问题 (解决 LLD 链接器报错)
 echo "Fixing Paddle Lite symbol table for LLD compatibility..."
@@ -35,16 +31,24 @@ else
     echo "Warning: llvm-objcopy not found at $LLVM_OBJCOPY, skipping fix."
 fi
 
-# 3. 执行编译
+# 4. 执行编译
 echo "Configuring and building..."
-echo "Using ANDROID_NDK_HOME: $ANDROID_NDK_HOME"
 mkdir -p build_android && cd build_android
+
+# 这里的路径计算要小心，因为我们现在在 build_android 目录下
+PADDLE_PATH="$(pwd)/../inference_lite_lib"
+OPENCV_JNI_PATH="$OPENCV_SDK_DIR/sdk/native/jni"
+
 cmake .. \
     -DCMAKE_TOOLCHAIN_FILE=$ANDROID_NDK_HOME/build/cmake/android.toolchain.cmake \
     -DANDROID_ABI="arm64-v8a" \
     -DANDROID_PLATFORM=android-23 \
-    -DPADDLE_LITE_DIR=$(pwd)/../inference_lite_lib \
-    -DOPENCV_DIR=$OPENCV_SDK_DIR/sdk/native/jni \
+    -DWITH_LITE=ON \
+    -DOPENCV_DIR="$OPENCV_JNI_PATH" \
+    -DOpenCV_DIR="$OPENCV_JNI_PATH" \
+    -DPADDLE_LITE_DIR="$PADDLE_PATH" \
     -DCMAKE_BUILD_TYPE=$BUILD_TYPE
 
 make -j$(nproc)
+
+echo "Build complete. Library located at build_android/libocr_engine.so"
