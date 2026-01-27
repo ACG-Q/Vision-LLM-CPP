@@ -51,8 +51,8 @@ cmake ..\ocr_library -G "Visual Studio 17 2022" -A x64 `
 
 Write-Host "Building project..."
 cmake --build . --config $BuildType
-Write-Host "Installing to $INSTALL_DIR..."
+Write-Host "Installing to ${INSTALL_DIR}..."
 cmake --install . --config $BuildType
 
-Write-Host "Build complete. Artifacts in $INSTALL_DIR:"
+Write-Host "Build complete. Artifacts in ${INSTALL_DIR}:"
 Get-ChildItem -Path $INSTALL_DIR -Recurse | Select-Object Name, FullName
