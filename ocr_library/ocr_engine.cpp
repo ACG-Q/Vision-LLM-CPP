@@ -224,8 +224,16 @@ public:
     }
 
     std::string Run(const std::string &img_path) {
+#ifdef _WIN32
+        // Support Unicode paths on Windows
+        std::ifstream fs(img_path, std::ios::binary);
+        if (!fs) return "{\"error\":\"cannot open file stream\"}";
+        std::vector<unsigned char> data((std::istreambuf_iterator<char>(fs)), std::istreambuf_iterator<char>());
+        cv::Mat img = cv::imdecode(data, cv::IMREAD_COLOR);
+#else
         cv::Mat img = cv::imread(img_path, cv::IMREAD_COLOR);
-        if (img.empty()) return "{\"error\":\"cannot read image\"}";
+#endif
+        if (img.empty()) return "{\"error\":\"cannot decode image\"}";
 
         // 1. Detection
         cv::Mat det_img;
