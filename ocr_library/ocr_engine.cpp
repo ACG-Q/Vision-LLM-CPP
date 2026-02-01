@@ -238,12 +238,12 @@ public:
 #ifdef WITH_LITE
         auto det_in_t = det_predictor->GetInput(0);
         det_in_t->Resize({1, 3, det_img.rows, det_img.cols});
-        det_in_t->CopyFromCpu(det_input.data());
+        float* det_in_ptr = det_in_t->mutable_data<float>();
+        memcpy(det_in_ptr, det_input.data(), sizeof(float) * det_input.size());
         det_predictor->Run();
         auto det_out_t = det_predictor->GetOutput(0);
-        std::vector<float> det_out_data(det_out_t->shape()[2] * det_out_t->shape()[3]);
-        det_out_t->CopyToCpu(det_out_data.data());
-        cv::Mat pred(det_out_t->shape()[2], det_out_t->shape()[3], CV_32F, det_out_data.data());
+        const float* det_out_ptr = det_out_t->data<float>();
+        cv::Mat pred(det_out_t->shape()[2], det_out_t->shape()[3], CV_32F, (float*)det_out_ptr);
 #else
         auto det_in_names = det_predictor->GetInputNames();
         auto det_in_t = det_predictor->GetInputHandle(det_in_names[0]);
@@ -284,12 +284,14 @@ public:
 #ifdef WITH_LITE
             auto rec_in_t = rec_predictor->GetInput(0);
             rec_in_t->Resize({1, 3, rec_img.rows, rec_img.cols});
-            rec_in_t->CopyFromCpu(rec_input.data());
+            float* rec_in_ptr = rec_in_t->mutable_data<float>();
+            memcpy(rec_in_ptr, rec_input.data(), sizeof(float) * rec_input.size());
             rec_predictor->Run();
             auto rec_out_t = rec_predictor->GetOutput(0);
             auto rec_shape = rec_out_t->shape();
+            const float* rec_out_ptr = rec_out_t->data<float>();
             std::vector<float> rec_out_data(std::accumulate(rec_shape.begin(), rec_shape.end(), 1, std::multiplies<int64_t>()));
-            rec_out_t->CopyToCpu(rec_out_data.data());
+            memcpy(rec_out_data.data(), rec_out_ptr, sizeof(float) * rec_out_data.size());
 #else
             auto rec_in_names = rec_predictor->GetInputNames();
             auto rec_in_t = rec_predictor->GetInputHandle(rec_in_names[0]);
